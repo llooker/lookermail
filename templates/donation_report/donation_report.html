@@ -1,0 +1,39 @@
+{% extends "default.html" %}
+{% block body %}
+<td width="720">
+<p class="article-title" align="left"><singleline label="Title">Daily Donation and Volunteer Report</singleline></p>
+<div class="article-content" align="left">
+	<multiline label="Description">This is an automated message showing the progress for <i>your</i> portfolio of clients. 
+		Things to keep in mind when performing analysis on these numbers: <br/>
+		<ul>
+        <li>These numbers are produced from the reporting database and should be current if your clients have recorded their time in the system of record.</li>
+        <li>The comparison to previous periods is based on the relative completion of the period, i.e. if today is the 20th, the first 20 days of last month vs 20 days of this month</li>
+		</ul>
+	{% if clients %}
+    <i>This table represents your clients, your average donation amount is {{ "$%.2f" | format(basictotal[0]['ltv_predictions.sum_ltv_prediction'])}}. </i>
+	<table class="gradienttable" border="2" cellpadding="0" cellspacing="0" width="470">
+	<thead>
+        <th>Client Name</th>
+        <th>Average Gross Margin</th>
+        <th>Average Sale Price</th>
+        <th>Average Spend Per User</th>
+	</thead>
+	<tbody>
+	{% for client in clients %}
+		<tr>
+			<td>{{client['products.brand']}}</td>
+			<td><center>{{ "$%.2f" | format(client['order_items.average_gross_margin']) }}</center></td>
+			<td><center>{{ "$%.2f" | format(client['order_items.average_sale_price']) }}</center></td>
+			<td><center>{{ "$%.2f" | format(client['order_items.average_spend_per_user']) }}</center></td>
+		</tr>
+	{% endfor %} 
+	</tbody>
+	</table>
+	{% endif %}
+	If there are discrepant totals, or anomalies of any kind or you have any other questions please reach out to our team via one of the contact links on this message. 
+	<a href="mailto:CalHEERS_Interfacefiles@calheers.ca.gov%3Bcarrier_interface_support@calheers.ca.govâ€™ ?Subject={{basictotal}}%20FTP%20Files%20Received%20{{URLDATE}}">contact us</a>.
+	</multiline>
+
+</div>
+</td>
+{% endblock %}
