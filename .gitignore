@@ -3,7 +3,11 @@
 log.log
 .vscode/
 config.txt
-
+*.json
+sentArchive/
+instance_serial
+configs/reports/*.json
+templates/otherTemplates/
 
 ############## Generic Python Gitignore configurations ##############
 # Byte-compiled / optimized / DLL files

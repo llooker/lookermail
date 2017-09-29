@@ -1,129 +1,159 @@
 #!/usr/bin/env python
-import requests
-import ConfigParser
 
-###### EMAIL IMPORTS #####
-import smtplib, os, sys, datetime, time
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
-import jinja2
-import codecs
+#########
+# Author : Russell Garner, russell@looker.com
+# Date: 2017-09-25
+# Description: This is a package for configuring and sending HTML emails using Looker API Data
+# for further details please refer to the package README
+#########
 
-#Read config file with Looker API and SMTP gateway information
-config = ConfigParser.RawConfigParser(allow_no_value=True)
-config.read('configs/config.txt')
+###### SYSTEM IMPORTS #####
+import os, re, sys, logging, traceback, traceback, time, dateutil.parser, datetime
+import ConfigParser, argparse
+import operator
+from operator import itemgetter
 
-#Very Basic Looker API class allowing us to access the data from a given Look ID
-class lookerAPIClient:
-    def __init__(self, api_host=None, api_client_id=None, api_secret=None, api_port='19999'):
-        auth_request_payload = {'client_id': api_client_id, 'client_secret': api_secret}
-        self.host = api_host
-        self.uri_stub = '/api/3.0/'
-        self.uri_full = ''.join([api_host, ':', api_port, self.uri_stub])
-        response = requests.post(self.uri_full + 'login', params=auth_request_payload)
-        authData = response.json()
-        self.access_token = authData['access_token']
-        self.auth_headers = {
-                'Authorization' : 'token ' + self.access_token,
-                }
+## Custom Imports
+import lib.helpers as h
+# from lib.apiClient import lookerAPIClient 
+from lib.emailClient import reportBuilder
 
-    def post(self, call='', json_payload=None):
-        response = requests.post(self.uri_full + call, headers=self.auth_headers, json=json_payload)
-        return response.json()
+# optional if you're intending to execute from a remote directory when cronning: 
+# os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    def get(self, call=''):
-        response = requests.get(self.uri_full + call, headers=self.auth_headers)
-        return response.json()
-
-    def runLook(self, look, limit=100):
-        optional_arguments = '?' + 'limit=' + str(limit)
-        return self.get('/'.join(['looks',look,'run','json'])+optional_arguments)
-
-
-class email:
+######### Settings and Singletons #########
+class Arguments:
+    '''Serves as a wrapper for aruments, argument flags are set globally upon class instantiation'''
     def __init__(self):
-        print 'email class instantiated'
+        parser = argparse.ArgumentParser()
+        #db params
+        parser.add_argument("-r", "--report", help="Name the report configuration to send", type=str)
+        global args 
+        args = parser.parse_args()
 
-    def send_html_mail(self, send_from, send_to, subject, html, files=[], send_to_cc=[]):
-        assert type(send_to)==list
-        assert type(files)==list
-        text = ''
-        msg = MIMEMultipart('alternative')
-        msg['From'] = send_from
-        msg['To'] = COMMASPACE.join(send_to)
-        msg['Cc'] = COMMASPACE.join(send_to_cc)
-        msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = subject
-
-        msg.attach( MIMEText(text, 'plain'))
-        msg.attach( MIMEText(html.encode('UTF-8'), 'html'))
-        
-        for f in files:
-            part = MIMEBase('application', "octet-stream")
-            part.set_payload( open(f,"rb").read() )
-            Encoders.encode_base64(part)
-            part.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(f))
-            msg.attach(part)
-
-        # smtp = smtplib.SMTP(server)
-        smtp = smtplib.SMTP_SSL(config.get('smtp', 'host'), config.getint('smtp', 'port'))
-        # smtp = smtplib.SMTP('smtp.gmail.com', 587)
-        smtp.ehlo()
-        smtp.login(config.get('smtp', 'username'), config.get('smtp', 'password'))
-        # smtp.starttls()
-        # smtp.sendmail(send_from, lib.modules.abstract.removeDupes(send_to + send_to_cc), msg.as_string())
-        smtp.sendmail(send_from, send_to + send_to_cc, msg.as_string())
-        smtp.close()
-
-    def build_message(self, TEMPLATE_FILE, templateVars):
-        templateLoader = jinja2.FileSystemLoader(searchpath = "templates/")
-        # templateLoader = jinja2.FileSystemLoader(searchpath = os.getcwd() + "/lib/templates/") ## Original Line
-        templateEnv = jinja2.Environment(loader=templateLoader)
-        template = templateEnv.get_template( TEMPLATE_FILE )
-        return template.render( templateVars )
-
-class execution:
+class Settings:
     def __init__(self):
-        print 'Execution Initiated'
+        Arguments()
+        self.config = ConfigParser.RawConfigParser(allow_no_value=True)
+        self.config.read('configs/config.txt')
+        self.report = args.report
+        #Example of the of overriding a config file setting with a command line switch
+        # if args.example:
+        #     self.example = args.example
+        # else:
+        #     self.example = self.config.get('log_section', 'example')
+        global settings
+        settings = self
 
+class globalExecutionData:
+    '''
+        Put any data global runtime variables into this class to help encapsulate global variables as much as possible
+        '''
+    def __init__(self):
+        self.msgCounter = 0
+        global runtimeData
+        runtimeData = self
+    
+    def msgIDPlusOne(self):
+        '''
+            Allows for the incrmenting of Message IDs across email class instances
+            '''
+        self.msgCounter = self.msgCounter + 1
+        return str(self.msgCounter)
+
+
+######### Runtime Management #########
+class executionManager:
+    def __init__(self):
+        Settings()                  #Instantiate Global Settings
+        self.logging_level      = settings.config.getint('general','logging_level')
+        self.ts                 = time.time()
+        self.te                 = time.time()
+        self.executionCounter   = self.instanceSerial()
+        global instanceSerialValue
+        instanceSerialValue     = self.executionCounter
+        self.initializeLogging()    #Begin Logging Stream
+        self.welcomeMessage()       #Print Welcome Message
+        globalExecutionData()       #Instantiate Global runtime data
+
+
+    def __str__(self):
+        return 'Lookermail Execution Instance #: ' + self.executionCounter
+
+    def instanceSerial(self):
+        counterLocation = 'logs/instance_serial'
+        try:
+            executionCounterFile = open(counterLocation,'r')
+            executionCounter = int(executionCounterFile.read())
+            executionCounter = str(executionCounter + 1)
+            executionCounterFile = open(counterLocation,'w')
+            executionCounterFile.write(executionCounter)
+            executionCounterFile.close()
+            return executionCounter
+        except:
+            if os.path.exists(counterLocation):
+                pass
+            else:
+                executionCounterFile = open(counterLocation,'w')
+                executionCounterFile.write('0')
+            return str(0)
+
+    def initializeLogging(self):
+        logging.basicConfig(
+                            filename='logs/log.log', 
+                            format='%(levelname)s:%(asctime)s %(message)s', 
+                            datefmt='%m/%d/%Y %I:%M:%S %p', 
+                            level=logging.INFO)
+        ch = logging.StreamHandler(sys.stdout)
+        ch2 = logging.StreamHandler(sys.stdout)
+        ch.setLevel(self.logging_level)
+        ch2.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+                                      '%(levelname)s:%(asctime)s %(message)s', 
+                                      datefmt='%m/%d/%Y %I:%M:%S %p')
+        ch.setFormatter(formatter)
+        ch2.setFormatter(formatter)
+        logging.getLogger('').addHandler(ch)
+        self.logger = logging.getLogger('test')
+        self.logger.addHandler(ch2)
+        global logMe
+        logMe = self.logger
+
+    def welcomeMessage(self):
+        self.logger.info('-'*21 + ' START INSTANCE #' + self.executionCounter + '-'*21)
+        self.logArgs()
+        self.logger.info(
+            #Start Coloriztion # \u001b[47;1m\u001b[35;1m
+        u'''
+            |  _  _ |  _ ._|\/| _.o| 
+            |_(_)(_)|<(/_| |  |(_||| 
+            Version 1.0              '''
+            #End Colorizarion # \u001b[0m
+        )
+    def logArgs(self):
+        argList = ''
+        for elem in sys.argv:
+            argList = argList + ' ' + elem
+        self.logger.info(argList)
+        return argList
+
+    def exitWithError(self,errorText=''):
+        if errorText:
+            logging.info(errorText)
+        self.te = time.time()
+        self.logger.info('Total CalendarETL execution took: %4.4f sec' % (self.te-self.ts,))
+        self.logger.info('-'*21 + ' END INSTANCE #' + self.executionCounter + '-'*21)
+        sys.exit(1)
+
+    def close(self):
+        self.te = time.time()
+        self.logger.info('total execution took: %4.4f sec' % (self.te-self.ts,))
+        self.logger.info('-'*21 + ' END INSTANCE #' + self.executionCounter + '-'*21)
     def run(self):
-        lookerAPIInstance = lookerAPIClient(
-            api_host      = config.get('api', 'host'), 
-            api_client_id = config.get('api', 'client_id'), 
-            api_secret    = config.get('api', 'secret'), 
-            api_port      = config.get('api', 'port')
-        )
-        basicTotal = lookerAPIInstance.runLook('299',limit=10000)
-        clientSummary = lookerAPIInstance.runLook('349',limit=10000)
-        emailCoordinatorInstance = email()
-        # message_variables = {
-        # "SENDDATE":time.strftime("%m/%d/%Y"),
-        # "URLDATE":time.strftime("%m-%d-%Y"),
-        # "MESSAGETITLE":'Hello World!',
-        # "MESSAGETEXT":'message with good news!',
-        # }
-        # testfile = codecs.open('cool.html','w',"utf-8")
-        # testfile.write( y.build_message('default.html',message_variables) )
-        templateVars = {
-        "SENDDATE":time.strftime("%m/%d/%Y"),
-        "URLDATE":time.strftime("%m-%d-%Y"),
-        "MESSAGETITLE":'Donation Report',
-        "MESSAGETEXT":'Donation Report Body Text',
-        "clients":clientSummary,
-        "basictotal":basicTotal
-        }
-        emailCoordinatorInstance.send_html_mail(
-            'russell@looker.com', #from 
-            ['russelljgarner@gmail.com'], #to
-            'Daily Donation and Volunteer Report', #subject line
-            emailCoordinatorInstance.build_message("donation_report/donation_report.html",templateVars), #Template Variables
-            [] #Attachements (optional)
-        )
-        # emailCoordinatorInstance.simpleNotice('hello from lookermail script',historicalCustomers[0]['ltv_predictions.sum_ltv_prediction'],'Test',['russelljgarner@gmail.com'])
-        # testfile.close()
-
-instance = execution()
+        myReport = reportBuilder(settings.report, self.executionCounter)
+        myReport.build()
+######### Invoke Execution Steps #########
+instance = executionManager()
 instance.run()
+instance.close()
+######### End Execution Steps #########

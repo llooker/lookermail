@@ -1,0 +1,19 @@
+[general]
+templates_directory = templates
+#Debug
+logging_level = 10
+#Info
+#logging_level = 50
+
+[api]
+host = https://<<your_company>>.looker.com
+client_id = <<your_id>> 
+secret = <<your_secret>> 
+port= 19999
+
+[smtp]
+host = smtp.gmail.com
+port = 465
+username = <<you@gmail.com>>
+password = <<your_password>>
+use_ssl = True

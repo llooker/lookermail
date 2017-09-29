@@ -1,0 +1,57 @@
+{
+    "reportName" : "ecommerce",
+    "template"   : "basic/basic_configured.html",
+    "sendAs"     : "you@example.com",
+    "to": [
+            "team@example.com"
+        ],
+    "cc": [],
+    "subject"    : "My Report",
+    "variables":{
+        "headline"      :"Business Report",
+        "title"         :"Daily Metrics",
+         "MESSAGETITLE" :"My Great Title",
+        "MESSAGETEXT"   :"My example Body Text"
+    },
+    "dataSources": {
+        "donationTotal": {
+            "templateVariableName"  : "averageProfit",
+            "lookerType"            : "look",
+            "location"              : "299",
+            "dataType"              : "json",
+            "display"               : "inline"
+        },
+        "clientSummary": {
+            "templateVariableName"  : "clientSummary",
+            "lookerType"            : "look",
+            "location"              : "349",
+            "dataType"              : "json",
+            "display"               : "inline"
+        },
+        "donationPie": {
+            "templateVariableName"  : "clientPie",
+            "lookerType"            : "look",
+            "location"              : "301",
+            "dataType"              : "jpg",
+            "display"               : "inline",
+            "imageDims"  : {
+                "height" : "50px",
+                "width"  : "50px"
+                }
+        },
+        "brands": {
+            "templateVariableName"  : "brands",
+            "lookerType"            : "query",
+            "location"              : "query1",
+            "dataType"              : "json",
+            "display"               : "inline"
+        },
+         "donationPieAttachment": {
+            "templateVariableName"  : "clientPieAttachment",
+            "lookerType"            : "look",
+            "location"              : "301",
+            "dataType"              : "csv",
+            "display"               : "attachment"
+        }
+    }
+}

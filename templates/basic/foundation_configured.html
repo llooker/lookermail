@@ -1,0 +1,117 @@
+{% extends "foundation.html" %}
+{% block body %}
+<!-- Start Visual Body -->
+<th class="small-12 large-12 columns first last"><table><tr><th>
+    <h1><img src='https://static1.squarespace.com/static/564ac671e4b01a652ab50744/t/580554339de4bb1d5eb522e6/1506446452446/?format=1500w'></h1>
+    <h1>{{headline}}</h1>
+    <!-- introduction paragraph -->
+    <p>
+
+    </p>
+    <!-- introduction paragraph -->
+    <table class="spacer"><tbody><tr><td height="16px" style="font-size:16px;line-height:16px;">&#xA0;</td></tr></tbody></table> 
+
+    <hr>
+    <img src='cid:donationPie'/>
+    <hr>
+
+    <table class="callout"><tr><th class="callout-inner secondary">
+    <table class="row"><tbody><tr>
+        <th class="small-12 large-6 columns first"><table><tr><th>
+        <p>
+            <strong>Donation Amount</strong><br>
+            {{ "$%.2f" | format(donationTotal[0]['ltv_predictions.sum_ltv_prediction'])}}
+        </p>
+        <p>
+            <strong>Email Address</strong><br>
+            thecapn@pirates.org
+        </p>
+        <p>
+            <strong>Order ID</strong><br>
+            239235983749636
+        </p>
+        </th></tr></table></th>
+        <th class="small-12 large-6 columns last"><table><tr><th>
+        <p>
+            <strong>Shipping Method</strong><br>
+            Boat (1&ndash;2 weeks)<br>
+            <strong>Shipping Address</strong><br>
+            Captain Price<br>
+            123 Maple Rd<br>
+            Campbell, CA 95112
+        </p>
+        </th></tr></table></th>
+    </tr></tbody></table>
+    </th><th class="expander"></th></tr></table>
+    
+    <!-- Start Table -->
+    <h4>Order Details</h4>
+    <table>
+        <thead>
+            <tr>
+            <th>Client Name</th>
+            <th>Average Gross Margin</th>
+            <th>Average Sale Price</th>
+            <th>Average Spend Per User</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            <tr>
+            <th>{{client['products.brand']}}</th>
+            <td><center>{{ "$%.2f" | format(clientSummary['order_items.average_gross_margin']) }}</center></td>
+            <td><center>{{ "$%.2f" | format(clientSummary['order_items.average_sale_price']) }}</center></td>
+            <td><center>{{ "$%.2f" | format(clientSummary['order_items.average_spend_per_user']) }}</center></td>
+            </tr>
+            {% endfor %} 
+        </tbody>
+    </table>
+    <!-- End Table -->
+        <table>
+            
+            <thead>
+                <th>Film ID</th>
+                <th>Total Amount</th>
+            </thead>
+            <tbody>
+                {% for brand in brands %}
+                    <tr><td>{{ brand['inventory.film_id'] }}</td></tr>
+                    <tr><td>{{ brand['payment.total_amount'] }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+    <hr>
+
+    <h4>What's Next?</h4>
+
+    <p>Our carrier raven will prepare your order for delivery. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Modi necessitatibus itaque debitis laudantium doloribus quasi nostrum distinctio suscipit, magni soluta eius animi voluptatem qui velit eligendi quam praesentium provident culpa?</p>
+
+</th></tr></table></th>
+
+
+</tr>
+</tbody>
+</table>
+<!-- End Visual Body -->
+{% endblock %}
+{% block footer %}
+<table class="row footer text-center"><tbody><tr>
+<th class="small-12 large-3 columns first"><table><tr><th>
+    <img src="http://placehold.it/170x30" alt="">
+</th></tr></table></th>
+<th class="small-12 large-3 columns"><table><tr><th>
+    <p>
+    Call us at 800.555.1923<br>
+    Email us at support@discount.boat
+    </p>
+</th></tr></table></th>
+<th class="small-12 large-3 columns last"><table><tr><th>
+    <p>
+    123 Maple Rd<br>
+    Campbell, CA 95112
+    </p>
+</th></tr></table></th>
+</tr></tbody></table>
+{% endblock %}
