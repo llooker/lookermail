@@ -1,0 +1,62 @@
+{% macro basicTable(mytable) -%}
+	{% if mytable %}
+	<table class="gradienttable" border="2" cellpadding="0" cellspacing="0" width="470">
+		<thead>
+			{% for k in mytable[0] %}
+			<th>{{ k }}</th>
+			{%- endfor %}
+		</thead>
+		<tbody>
+		{% for row in mytable %}
+			<tr>
+			{% for key,value in row.iteritems() %}
+				<td>{{ value }}</td>
+			{% endfor %}
+			</tr>
+		{%- endfor %} 
+		</tbody>
+	</table>
+	{% else %}
+	<p></p>
+	{%- endif %}
+{%- endmacro %}
+{% macro detailTable(mytable,class="gradienttable",width="470") -%}
+	{% if mytable %}
+    {% set renderFields = [] %}
+	{% for field in mytable["fields"]["dimensions"] %} {% if field["hidden"] == false %} {% do renderFields.append({"name":field["name"],"label":field["label"],"type":"dimension"}) %} {% endif %} {% endfor %}
+    {% for field in mytable["fields"]["measures"] %} {% if field["hidden"] == false %} {% do renderFields.append({"name":field["name"],"label":field["label"],"type":"measures"}) %} {% endif %} {% endfor %}
+	{% for field in mytable["fields"]["table_calculations"] %} {% if field["hidden"] == false %} {% do renderFields.append({"name":field["name"],"label":field["label"],"type":"table_calculations"}) %} {% endif %} {% endfor %}
+	<table class="{{ class }}" border="2" cellpadding="0" cellspacing="0" width="{{ width }}">
+		<thead>
+			{% for header in renderFields %}
+			  <th> {{ header["label"] }} </th>
+			{%- endfor %}
+		</thead>
+		<tbody>
+		{% for row in mytable["data"] %}
+			<tr>
+			<!-- { % for key,value in row.iteritems() % } -->
+			{% for data in renderFields %}
+				{% if row[data["name"]]["rendered"] %}
+				<td>{{ row[data["name"]]["rendered"] }}</td>
+				{% else %}
+				<td>{{ row[data["name"]]["value"] }}</td>
+				{% endif %}
+			{%- endfor %}
+			</tr>
+		{%- endfor %} 
+		</tbody>
+	</table>
+	{%- else %}
+	<p></p>
+	{%- endif %}
+{%- endmacro %}
+{% macro inlineImage(img) %}
+	{% if img.imageDims.height == "" %}
+	  <img src='cid:{{ img.templateVariableName }}'  width="{{ img.imageDims.width }}" />
+	{% elif img.imageDims.width == "" %}
+	  <img src='cid:{{ img.templateVariableName }}' height="{{ img.imageDims.height }}"  />
+	{% else %}
+	 <img src='cid:{{ img.templateVariableName }}' height="{{ img.imageDims.height }}" width="{{ img.imageDims.width }}" />
+	{% endif %}
+{%- endmacro %}
