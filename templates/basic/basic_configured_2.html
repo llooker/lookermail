@@ -1,18 +1,14 @@
 {% extends "basic.html" %}
 {% block body %}
-<td width="720">
-<p class="article-title" align="left"><singleline label="Title">Daily Transaction Report</singleline></p>
+<td width="940px">
+<p class="article-title" align="left"><singleline label="Title">{{ title }}</singleline></p>
 <div class="article-content" align="left">
-	<multiline label="Description">This is an automated message showing the progress for <i>your</i> portfolio of clients. 
-		Things to keep in mind when performing analysis on these numbers: <br/>
-		<ul>
-        <li>These numbers are produced from the reporting database and should be current if your clients have recorded their time in the system of record.</li>
-        <li>The comparison to previous periods is based on the relative completion of the period, i.e. if today is the 20th, the first 20 days of last month vs 20 days of this month</li>
-		</ul>
-	{{ lookermail.detailTable(traveler_core_kpi,class="gradienttable",width="800px") }}
+	<multiline label="Description"> {{ MESSAGETEXT }}
+	{#{ lookermail.detailTable(traveler_core_kpi,class="gradienttable",width="940px") }#}
+	{{ looker(json_detail=traveler_core_kpi).asHTML(theme='gradienttable') }}
 
 	If there are discrepant totals, or anomalies of any kind or you have any other questions please reach out to our team via one of the contact links on this message. 
-	<a href="mailto:example@gmail.com%3Bexample2@gmail.com?Subject={{ title | urlencode }}">contact us</a>.
+	<a href="mailto:{{ replyto | urlencode }}?Subject={{ title | urlencode }}">contact us</a>.
 	</multiline>
 
 </div>

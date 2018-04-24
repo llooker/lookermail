@@ -146,10 +146,10 @@ class lookerAPIClient:
             provides the reder task id, then fetches the result which can be used as a file
         '''
         status = self.pingRenderTask(render_task_id) 
-        logging.debug('initial status:' + status)
+        logging.info('initial dashboard status:' + status)
         while status == 'rendering':
             time.sleep(5)
-            logging.debug("status is " + status)
+            logging.info("status is ...." + status)
             status = self.pingRenderTask(render_task_id) 
             if status != 'rendering':
                 break

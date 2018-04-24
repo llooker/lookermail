@@ -97,7 +97,10 @@ class emailClient:
 
     def send(self):
         # uncomment the next 4 lines to actually send
-        smtp = smtplib.SMTP_SSL(config.get('smtp', 'host'), config.getint('smtp', 'port'))
+        if config.get('smtp', 'use_ssl') == 'True':
+            smtp = smtplib.SMTP_SSL(config.get('smtp', 'host'), config.getint('smtp', 'port'))
+        else:
+            smtp = smtplib.SMTP(config.get('smtp', 'host'), config.getint('smtp', 'port'))
         smtp.ehlo()
         smtp.login(config.get('smtp', 'username'), config.get('smtp', 'password'))
         smtp.sendmail(self.sendAs, h.removeDupes(self.sendTo + self.sendToCC), self.msg.as_string()) #potentially remove dupes between to and cc fields (see example code)

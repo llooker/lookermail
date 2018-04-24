@@ -158,3 +158,4 @@ class lookerTable:
         returnString = returnString + '\n</body>'
         returnString = returnString + '\n</table>'
         return returnString
+
